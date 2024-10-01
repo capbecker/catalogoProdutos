@@ -1,27 +1,22 @@
 package com.recrutamento.catalogoProdutos.product.specification;
 
-import com.recrutamento.catalogoProdutos.product.model.Product;
+import com.recrutamento.catalogoProdutos.product.model.Produto;
 import org.springframework.data.jpa.domain.Specification;
 
 public class ProductSpecification {
 
-    public static Specification<Product> name(String name) {
+    public static Specification<Produto> nome(String nome) {
         return (root, criteriaQuery, criteriaBuilder) ->
-                name == null ? null : criteriaBuilder.like(root.get("name"), "%"+name+"%");
+                nome == null ? null : criteriaBuilder.like(root.get("nome"), "%"+nome+"%");
     }
 
-    public static Specification<Product> description(String description) {
+    public static Specification<Produto> greaterOrEqualThan(Double min_price) {
         return (root, criteriaQuery, criteriaBuilder) ->
-                description == null ? null : criteriaBuilder.like(root.get("description"), "%"+description+"%");
+                min_price == null ? null : criteriaBuilder.greaterThanOrEqualTo(root.get("preco"), min_price);
     }
 
-    public static Specification<Product> greaterOrEqualThan(Double min_price) {
+    public static Specification<Produto> lessOrEqualThan(Double max_price) {
         return (root, criteriaQuery, criteriaBuilder) ->
-                min_price == null ? null : criteriaBuilder.greaterThanOrEqualTo(root.get("price"), min_price);
-    }
-
-    public static Specification<Product> lessOrEqualThan(Double max_price) {
-        return (root, criteriaQuery, criteriaBuilder) ->
-                max_price == null ? null : criteriaBuilder.lessThanOrEqualTo(root.get("price"), max_price);
+                max_price == null ? null : criteriaBuilder.lessThanOrEqualTo(root.get("preco"), max_price);
     }
 }

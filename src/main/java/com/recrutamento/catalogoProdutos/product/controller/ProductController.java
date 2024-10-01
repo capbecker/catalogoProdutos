@@ -1,7 +1,7 @@
 package com.recrutamento.catalogoProdutos.product.controller;
 
-import com.recrutamento.catalogoProdutos.product.model.Product;
-import com.recrutamento.catalogoProdutos.product.model.ProductDto;
+import com.recrutamento.catalogoProdutos.product.model.Produto;
+import com.recrutamento.catalogoProdutos.product.model.ProdutoDto;
 import com.recrutamento.catalogoProdutos.product.service.ProductService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,13 +9,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.*;
 
 @RestController()
-@RequestMapping("products")
+//@RequestMapping("products")
+@RequestMapping("api/produto")
 public class ProductController {
 
     @Autowired
@@ -28,21 +33,21 @@ public class ProductController {
     /**
      * Valida se os dados foram enviados corretamente e insere produto
      *
-     * @param productDto:   Produto no formato ProductDto
+     * @param produtoDto:   Produto no formato ProductDto
      * @param ucb:          Objeto para gerar a url de retorno
      *
      * @return
      *  Se não ocorrer nenhum erro, retorna um response com o status 201 e o objeto criado no body
      *  Caso contrário, retorna um response com o status do erro e tratado no GlobalExceptionHandler
      */
-    @PostMapping
+    @PostMapping("salvarProduto")
     @Transactional
-    public ResponseEntity<Product> insert(
-            @Valid @RequestBody ProductDto productDto,
+    public ResponseEntity<Produto> insert(
+            @Valid @RequestBody ProdutoDto produtoDto,
             UriComponentsBuilder ucb)  {
-        Product productSaved = productService.insert(convertToEntity(productDto));
+        Produto produtoSaved = productService.insert(convertToEntity(produtoDto));
         URI uri = ucb.path("/").buildAndExpand().toUri();
-        return ResponseEntity.created(uri).body(productSaved);
+        return ResponseEntity.created(uri).body(produtoSaved);
     }
 
     /**
@@ -51,18 +56,18 @@ public class ProductController {
      *  Caso {product} tenha os campos name, description ou price como null, será mantido o valor antigo
      *
      * @param id:           id do produto
-     * @param productDto:   Produto no formato ProductDto
+     * @param produtoDto:   Produto no formato ProductDto
      *
      * @return
      *  Se não ocorrer nenhum erro, retorna um response com o status 200 e o objeto atualizado no body
      *  Caso contrário, retorna um response com o status do erro e tratado no GlobalExceptionHandler
      */
-    @PutMapping("/{id}")
+    @PutMapping("/atualizarProduto/{id}")
     @Transactional
-    public ResponseEntity<Product> update(@PathVariable Long id, @RequestBody ProductDto productDto) {
-        Product product = convertToEntity(productDto);
-        Product productSaved = productService.update(id, product);
-        return ResponseEntity.ok(productSaved);
+    public ResponseEntity<Produto> update(@PathVariable Long id, @RequestBody ProdutoDto produtoDto) {
+        Produto produto = convertToEntity(produtoDto);
+        Produto produtoSaved = productService.update(id, produto);
+        return ResponseEntity.ok(produtoSaved);
 
     }
 
@@ -72,9 +77,9 @@ public class ProductController {
      * @return um response com o status 200 e a lista de produtos no body
      */
     @GetMapping()
-    public ResponseEntity<List<Product>> findAll() {
-        List<Product> products = productService.findAll();
-        return ResponseEntity.ok(products);
+    public ResponseEntity<List<Produto>> findAll() {
+        List<Produto> produtos = productService.findAll();
+        return ResponseEntity.ok(produtos);
     }
 
     /**
@@ -87,9 +92,9 @@ public class ProductController {
      *  Se não ocorrer nenhum erro, retorna um response com o status 200
      *  Caso contrário, retorna um response com o status do erro e tratado no GlobalExceptionHandler
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<Product> findById(@PathVariable Long id) {
-        Product products = productService.findById(id);
+    @GetMapping("/obterProduto/{id}")
+    public ResponseEntity<Produto> findById(@PathVariable Long id) {
+        Produto products = productService.findById(id);
         return ResponseEntity.ok(products);
     }
 
@@ -100,15 +105,22 @@ public class ProductController {
      * @param q:            Parametro de busca de nome ou descrição de produtos (opcional)
      * @param min_price:    Parametro de valor minimo de price de produtos (opcional)
      * @param max_price:    Parametro de valor maximo de price de produtos (opcional)
+     * @param page:         Parametro de qual pagina se deve buscar;
+     * @param size:         Parametro de quantos registros devem vir por pagina;
      *
      * @return  um response com o status 200 e a lista de produtos no body
      */
-    @GetMapping("/search")
-    public ResponseEntity<List<Product>> search(@RequestParam(name = "q", required = false) String q,
+    @GetMapping("/buscarProdutos")
+    public ResponseEntity<Page<Produto>> search(@RequestParam(name = "q", required = false) String q,
                                                 @RequestParam(name = "min_price", required = false) Double min_price,
-                                                @RequestParam(name = "max_price", required = false) Double max_price) {
-        List<Product> products = productService.search(q, min_price, max_price);
-        return ResponseEntity.ok(products);
+                                                @RequestParam(name = "max_price", required = false) Double max_price,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Produto> produtos = productService.search(q, min_price, max_price, pageable);
+
+        return ResponseEntity.ok(produtos);
     }
 
     /**
@@ -121,7 +133,7 @@ public class ProductController {
      *  Se não ocorrer nenhum erro, retorna um response com o status 200
      *  Caso contrário, retorna um response com o status do erro e tratado no GlobalExceptionHandler
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("excluirProduto/{id}")
     @Transactional
     public ResponseEntity<?> delete(@PathVariable Long id) {
         productService.delete(id);
@@ -131,12 +143,12 @@ public class ProductController {
     /**
      * Converte um ProductDto para Product
      *
-     * @param productDto: ProductDto a ser convertido
+     * @param produtoDto: ProductDto a ser convertido
      *
      * @return Product convertido
      */
-    private Product convertToEntity(ProductDto productDto) {
-        Product product = modelMapper.map(productDto, Product.class);
-        return product;
+    private Produto convertToEntity(ProdutoDto produtoDto) {
+        Produto produto = modelMapper.map(produtoDto, Produto.class);
+        return produto;
     }
 }

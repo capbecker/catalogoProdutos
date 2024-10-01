@@ -1,10 +1,12 @@
 package com.recrutamento.catalogoProdutos.product.service;
 
-import com.recrutamento.catalogoProdutos.product.model.Product;
+import com.recrutamento.catalogoProdutos.product.model.Produto;
 import com.recrutamento.catalogoProdutos.product.repository.ProductRepository;
 import com.recrutamento.catalogoProdutos.product.specification.ProductSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,13 +24,13 @@ public class ProductService {
     /**
      * Insere um produto com os dados de {product}
      *
-     * @param product:  dados do produto a ser inserido
+     * @param produto:  dados do produto a ser inserido
      *
      * @return: produto inserido
      */
-    public Product insert(Product product) {
-        Product productSaved = productRepository.save(product);
-        return productSaved;
+    public Produto insert(Produto produto) {
+        Produto produtoSaved = productRepository.save(produto);
+        return produtoSaved;
     }
 
     /**
@@ -36,23 +38,23 @@ public class ProductService {
      * Caso {product} tenha os campos name, description ou price como null, será mantido o valor antigo
      *
      * @param id:       id do produto a ser excluído
-     * @param product:  dados do produto a ser atualizado
+     * @param produto:  dados do produto a ser atualizado
      *
      * @return: produto atualizado
      * @throws ResponseStatusException
      */
-    public Product update(Long id, Product product) throws ResponseStatusException{
-        Optional<Product> checkProduct = productRepository.findById(id);
+    public Produto update(Long id, Produto produto) throws ResponseStatusException{
+        Optional<Produto> checkProduct = productRepository.findById(id);
         if (!checkProduct.isPresent()) {
             throw new NoSuchElementException("Not found product with id " + id);
         }
-        Product newProduct =
-            new Product(id,
-                coalesce(product.getName(), checkProduct.get().getName()),
-                coalesce(product.getDescription(), checkProduct.get().getDescription()),
-                coalesce(product.getPrice(), checkProduct.get().getPrice())
+        Produto newProduto =
+            new Produto(id,
+                coalesce(produto.getNome(), checkProduct.get().getNome()),
+                coalesce(produto.getValidade(), checkProduct.get().getValidade()),
+                coalesce(produto.getPreco(), checkProduct.get().getPreco())
             );
-        return productRepository.save(newProduct);
+        return productRepository.save(newProduto);
     }
 
     /**
@@ -60,7 +62,7 @@ public class ProductService {
      *
      * @return: lista de produtos
      */
-    public List<Product> findAll() {
+    public List<Produto> findAll() {
         return productRepository.findAll();
     }
 
@@ -72,8 +74,8 @@ public class ProductService {
      *
      * @throws ResponseStatusException
      */
-    public Product findById(Long id) throws ResponseStatusException{
-        Optional<Product> product = productRepository.findById(id);
+    public Produto findById(Long id) throws ResponseStatusException{
+        Optional<Produto> product = productRepository.findById(id);
         if (!product.isPresent()) {
             throw new NoSuchElementException("Not found product with id " + id);
         }
@@ -93,14 +95,15 @@ public class ProductService {
      *
      * @return lista de produtos filtrados por nome, descrição e/ou preço
      */
-    public List<Product> search(String q, Double min_price, Double max_price) {
-        return productRepository.findAll(
-                Specification.where(
-                    (ProductSpecification.name(q)
-                            .or(ProductSpecification.description(q))
-                    )
-                    .and(ProductSpecification.greaterOrEqualThan(min_price)
-                    .and(ProductSpecification.lessOrEqualThan(max_price)))));
+    public Page<Produto> search(String q, Double min_price, Double max_price, Pageable pageable) {
+        Specification<Produto> specification =
+            Specification.where(
+                (ProductSpecification.nome(q)
+                       // .or(ProductSpecification.description(q))
+                )
+                .and(ProductSpecification.greaterOrEqualThan(min_price)
+                .and(ProductSpecification.lessOrEqualThan(max_price))));
+        return productRepository.findAll(specification, pageable);
     }
 
     /**
@@ -111,7 +114,7 @@ public class ProductService {
      * @throws ResponseStatusException
      */
     public void delete(Long id) throws ResponseStatusException{
-        Optional<Product> checkProduct = productRepository.findById(id);
+        Optional<Produto> checkProduct = productRepository.findById(id);
         if (!checkProduct.isPresent()) {
             throw new NoSuchElementException("Not found product with id " + id);
         }
